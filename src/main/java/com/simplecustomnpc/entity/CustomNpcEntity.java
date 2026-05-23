@@ -23,16 +23,15 @@ import net.minecraft.world.World;
 
 public class CustomNpcEntity extends LivingEntity {
 
-    // NBT_COMPOUND was removed from TrackedDataHandlerRegistry in 1.21.11.
-    // TrackedDataHandler.create() needs PacketCodec<? super RegistryByteBuf, T>.
-    // PacketCodecs.NBT_COMPOUND is PacketCodec<ByteBuf, NbtElement>; we cast+xmap it.
-    @SuppressWarnings("unchecked")
+    // 1.21.11: TrackedDataHandlerRegistry no longer has NBT_COMPOUND.
+    // We create our own handler using PacketCodecs.NBT_COMPOUND (which is
+    // PacketCodec<ByteBuf, NbtElement>). We xmap it to NbtCompound safely.
     private static final TrackedDataHandler<NbtCompound> NBT_COMPOUND_HANDLER;
     static {
-        // RegistryByteBuf extends ByteBuf, cast is safe; NbtCompound is always what
-        // NBT_COMPOUND encodes/decodes at runtime.
-        PacketCodec<RegistryByteBuf, NbtCompound> codec =
-                ((PacketCodec<RegistryByteBuf, NbtCompound>) (PacketCodec<?, ?>) PacketCodecs.NBT_COMPOUND);
+        // PacketCodecs.NBT_COMPOUND encodes NbtElement but always produces NbtCompound
+        // at the call sites we use. Cast to the needed generic type via xmap.
+        PacketCodec<RegistryByteBuf, NbtCompound> codec = PacketCodecs.NBT_COMPOUND
+                .cast();
         NBT_COMPOUND_HANDLER = TrackedDataHandler.create(codec);
         TrackedDataHandlerRegistry.register(NBT_COMPOUND_HANDLER);
     }
@@ -99,7 +98,7 @@ public class CustomNpcEntity extends LivingEntity {
     }
 
     private void openEditGui(PlayerEntity player) {
-        // No-op server-side; client entrypoint handles via event
+        // No-op server-side; client entrypoint handles via networking event
     }
 
     // ── Tick / AI ─────────────────────────────────────────────────────────────
@@ -121,7 +120,8 @@ public class CustomNpcEntity extends LivingEntity {
     }
 
     @Override
-    public boolean isInvulnerableTo(net.minecraft.server.world.ServerWorld world, net.minecraft.entity.damage.DamageSource source) {
+    public boolean isInvulnerableTo(net.minecraft.server.world.ServerWorld world,
+                                    net.minecraft.entity.damage.DamageSource source) {
         return true;
     }
 

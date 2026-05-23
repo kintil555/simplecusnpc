@@ -7,7 +7,7 @@ import net.fabricmc.fabric.api.networking.v1.PayloadTypeRegistry;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.nbt.NbtCompound;
-import net.minecraft.network.PacketByteBuf;
+import net.minecraft.network.RegistryByteBuf;
 import net.minecraft.network.codec.PacketCodec;
 import net.minecraft.network.codec.PacketCodecs;
 import net.minecraft.network.packet.CustomPayload;
@@ -22,19 +22,27 @@ public class NpcNetworking {
     public static final CustomPayload.Id<SaveNpcPayload> SAVE_NPC_ID =
             new CustomPayload.Id<>(Identifier.of(SimpleCustomNpc.MOD_ID, "save_npc"));
 
+    // 1.21.11: PacketCodecs.NBT_COMPOUND is PacketCodec<ByteBuf, NbtElement>.
+    // We need PacketCodec<RegistryByteBuf, NbtCompound>.
+    // Use .cast() which reinterprets generics — safe because NBT_COMPOUND always
+    // encodes/decodes NbtCompound at our call sites.
+    @SuppressWarnings("unchecked")
+    private static final PacketCodec<RegistryByteBuf, NbtCompound> NBT_COMPOUND_CODEC =
+            (PacketCodec<RegistryByteBuf, NbtCompound>) (PacketCodec<?, ?>) PacketCodecs.NBT_COMPOUND;
+
     public record OpenGuiPayload(int entityId, NbtCompound poseNbt) implements CustomPayload {
-        public static final PacketCodec<PacketByteBuf, OpenGuiPayload> CODEC = PacketCodec.tuple(
-                PacketCodecs.INTEGER, OpenGuiPayload::entityId,
-                PacketCodecs.NBT_COMPOUND, OpenGuiPayload::poseNbt,
+        public static final PacketCodec<RegistryByteBuf, OpenGuiPayload> CODEC = PacketCodec.tuple(
+                PacketCodecs.INTEGER,   OpenGuiPayload::entityId,
+                NBT_COMPOUND_CODEC,     OpenGuiPayload::poseNbt,
                 OpenGuiPayload::new
         );
         @Override public Id<? extends CustomPayload> getId() { return OPEN_GUI_ID; }
     }
 
     public record SaveNpcPayload(int entityId, NbtCompound poseNbt) implements CustomPayload {
-        public static final PacketCodec<PacketByteBuf, SaveNpcPayload> CODEC = PacketCodec.tuple(
-                PacketCodecs.INTEGER, SaveNpcPayload::entityId,
-                PacketCodecs.NBT_COMPOUND, SaveNpcPayload::poseNbt,
+        public static final PacketCodec<RegistryByteBuf, SaveNpcPayload> CODEC = PacketCodec.tuple(
+                PacketCodecs.INTEGER,   SaveNpcPayload::entityId,
+                NBT_COMPOUND_CODEC,     SaveNpcPayload::poseNbt,
                 SaveNpcPayload::new
         );
         @Override public Id<? extends CustomPayload> getId() { return SAVE_NPC_ID; }
@@ -47,8 +55,6 @@ public class NpcNetworking {
         ServerPlayNetworking.registerGlobalReceiver(SAVE_NPC_ID, (payload, context) -> {
             ServerPlayerEntity player = context.player();
             context.server().execute(() -> {
-                // 1.21.11: ServerPlayerEntity uses getServerWorld()
-                // Fallback: use getWorld() which is available on Entity base class
                 if (player.getEntityWorld().getEntityById(payload.entityId()) instanceof CustomNpcEntity npc) {
                     if (player.squaredDistanceTo(npc) > 100) return;
                     NpcPoseData pose = NpcPoseData.fromNbt(payload.poseNbt());

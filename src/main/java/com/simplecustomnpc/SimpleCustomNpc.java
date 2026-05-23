@@ -26,7 +26,6 @@ public class SimpleCustomNpc implements ModInitializer {
     public static final Logger LOGGER = LoggerFactory.getLogger(MOD_ID);
 
     // ── Entity ────────────────────────────────────────────────────────────────
-    // 1.21.2+: build() requires RegistryKey; FabricEntityTypeBuilder is deprecated
     public static final EntityType<CustomNpcEntity> CUSTOM_NPC_ENTITY_TYPE;
     static {
         RegistryKey<EntityType<?>> key = RegistryKey.of(RegistryKeys.ENTITY_TYPE, Identifier.of(MOD_ID, "custom_npc"));
@@ -37,26 +36,40 @@ public class SimpleCustomNpc implements ModInitializer {
     }
 
     // ── Block ─────────────────────────────────────────────────────────────────
-    public static final NpcSpawnBlock NPC_SPAWN_BLOCK =
-            Registry.register(
-                    Registries.BLOCK,
-                    Identifier.of(MOD_ID, "npc_spawn_block"),
-                    new NpcSpawnBlock(AbstractBlock.Settings.create().nonOpaque().noCollision())
-            );
+    // 1.21.5+: AbstractBlock.Settings MUST have registryKey set, otherwise NPE on class init
+    public static final NpcSpawnBlock NPC_SPAWN_BLOCK;
+    static {
+        RegistryKey<net.minecraft.block.Block> blockKey =
+                RegistryKey.of(RegistryKeys.BLOCK, Identifier.of(MOD_ID, "npc_spawn_block"));
+        NPC_SPAWN_BLOCK = Registry.register(
+                Registries.BLOCK,
+                blockKey,
+                new NpcSpawnBlock(
+                        AbstractBlock.Settings.create()
+                                .registryKey(blockKey)
+                                .nonOpaque()
+                                .noCollision()
+                )
+        );
+    }
 
     // ── Block Item ────────────────────────────────────────────────────────────
-    public static final Item NPC_SPAWN_ITEM =
-            Registry.register(
-                    Registries.ITEM,
-                    Identifier.of(MOD_ID, "npc_spawn_block"),
-                    new NpcSpawnItem(NPC_SPAWN_BLOCK, new Item.Settings().maxCount(1))
-            );
+    public static final Item NPC_SPAWN_ITEM;
+    static {
+        RegistryKey<Item> itemKey =
+                RegistryKey.of(RegistryKeys.ITEM, Identifier.of(MOD_ID, "npc_spawn_block"));
+        NPC_SPAWN_ITEM = Registry.register(
+                Registries.ITEM,
+                itemKey,
+                new NpcSpawnItem(NPC_SPAWN_BLOCK, new Item.Settings().registryKey(itemKey).maxCount(1))
+        );
+    }
 
     // ── Block Entity ──────────────────────────────────────────────────────────
-    // 1.21.11: BlockEntityType.create() is private; use FabricBlockEntityTypeBuilder
     public static final BlockEntityType<NpcSpawnBlockEntity> NPC_SPAWN_BLOCK_ENTITY;
     static {
-        RegistryKey<BlockEntityType<?>> key = RegistryKey.of(RegistryKeys.BLOCK_ENTITY_TYPE, Identifier.of(MOD_ID, "npc_spawn_block_entity"));
+        RegistryKey<BlockEntityType<?>> key =
+                RegistryKey.of(RegistryKeys.BLOCK_ENTITY_TYPE, Identifier.of(MOD_ID, "npc_spawn_block_entity"));
         BlockEntityType<NpcSpawnBlockEntity> type = FabricBlockEntityTypeBuilder
                 .create(NpcSpawnBlockEntity::new, NPC_SPAWN_BLOCK)
                 .build();

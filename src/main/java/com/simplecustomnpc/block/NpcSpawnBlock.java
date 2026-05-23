@@ -24,7 +24,6 @@ public class NpcSpawnBlock extends BlockWithEntity {
 
     public static final BooleanProperty SPAWNED = BooleanProperty.of("spawned");
 
-    // 1.21.2+: BlockWithEntity requires getCodec()
     private static final MapCodec<NpcSpawnBlock> CODEC = createCodec(NpcSpawnBlock::new);
 
     public NpcSpawnBlock(Settings settings) {
@@ -63,7 +62,9 @@ public class NpcSpawnBlock extends BlockWithEntity {
     }
 
     @Override
-    public void onPlaced(World world, BlockPos pos, BlockState state, @Nullable net.minecraft.entity.LivingEntity placer, net.minecraft.item.ItemStack itemStack) {
+    public void onPlaced(World world, BlockPos pos, BlockState state,
+                         @Nullable net.minecraft.entity.LivingEntity placer,
+                         net.minecraft.item.ItemStack itemStack) {
         if (!world.isClient()) {
             spawnNpc((ServerWorld) world, pos);
             world.setBlockState(pos, state.with(SPAWNED, true));
@@ -82,22 +83,26 @@ public class NpcSpawnBlock extends BlockWithEntity {
         }
     }
 
-    // 1.21.11: onStateReplaced(BlockState, ServerWorld, BlockPos, boolean) - no newState param
+    // 1.21.11: onStateReplaced has TWO overloads:
+    //   - onStateReplaced(BlockState, World, BlockPos, BlockState, boolean)  ← old/client
+    //   - onStateReplaced(BlockState, ServerWorld, BlockPos, boolean)        ← server only
+    // We override the World-based one (called on both sides) for NPC cleanup.
     @Override
-    public void onStateReplaced(BlockState state, ServerWorld world, BlockPos pos, boolean moved) {
-        // Remove the linked NPC when the block is broken
-        BlockEntity be = world.getBlockEntity(pos);
-        if (be instanceof NpcSpawnBlockEntity npcBe) {
-            java.util.UUID uuid = npcBe.getNpcUuid();
-            if (uuid != null) {
-                world.getEntitiesByClass(
-                        CustomNpcEntity.class,
-                        new Box(pos).expand(1),
-                        npc -> npc.getUuid().equals(uuid)
-                ).forEach(net.minecraft.entity.Entity::discard);
+    public void onStateReplaced(BlockState state, World world, BlockPos pos, BlockState newState, boolean moved) {
+        if (!world.isClient() && !state.isOf(newState.getBlock())) {
+            BlockEntity be = world.getBlockEntity(pos);
+            if (be instanceof NpcSpawnBlockEntity npcBe) {
+                java.util.UUID uuid = npcBe.getNpcUuid();
+                if (uuid != null) {
+                    world.getEntitiesByClass(
+                            CustomNpcEntity.class,
+                            new Box(pos).expand(1),
+                            npc -> npc.getUuid().equals(uuid)
+                    ).forEach(net.minecraft.entity.Entity::discard);
+                }
             }
         }
-        super.onStateReplaced(state, world, pos, moved);
+        super.onStateReplaced(state, world, pos, newState, moved);
     }
 
     @Override
@@ -106,7 +111,8 @@ public class NpcSpawnBlock extends BlockWithEntity {
     }
 
     @Override
-    public ActionResult onUse(BlockState state, World world, BlockPos pos, PlayerEntity player, BlockHitResult hit) {
+    public ActionResult onUse(BlockState state, World world, BlockPos pos,
+                              PlayerEntity player, BlockHitResult hit) {
         if (!world.isClient()) {
             BlockEntity be = world.getBlockEntity(pos);
             if (be instanceof NpcSpawnBlockEntity npcBe) {

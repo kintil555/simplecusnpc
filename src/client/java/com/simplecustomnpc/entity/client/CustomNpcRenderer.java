@@ -4,7 +4,6 @@ import com.simplecustomnpc.entity.CustomNpcEntity;
 import com.simplecustomnpc.util.NpcPoseData;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
-import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.render.entity.EntityRendererFactory;
 import net.minecraft.client.render.entity.LivingEntityRenderer;
 import net.minecraft.client.render.entity.model.BipedEntityModel;
@@ -12,21 +11,15 @@ import net.minecraft.client.render.entity.model.EntityModelLayers;
 import net.minecraft.client.render.entity.state.BipedEntityRenderState;
 import net.minecraft.util.Identifier;
 
-import java.util.HashMap;
-import java.util.Map;
-
 @Environment(EnvType.CLIENT)
 public class CustomNpcRenderer extends LivingEntityRenderer<CustomNpcEntity, BipedEntityRenderState, BipedEntityModel<BipedEntityRenderState>> {
 
     private static final Identifier DEFAULT_SKIN =
             Identifier.of("minecraft", "textures/entity/player/wide/steve.png");
 
-    /** Cache: skinUrl → Identifier */
-    private static final Map<String, Identifier> skinCache = new HashMap<>();
-
     public CustomNpcRenderer(EntityRendererFactory.Context ctx) {
         super(ctx,
-                new BipedEntityModel<>(ctx.getPart(EntityModelLayers.PLAYER)),
+                new BipedEntityModel<>(ctx.getPart(EntityModelLayers.PLAYER_INNER_ARMOR)),
                 0.5f);
     }
 
@@ -39,7 +32,6 @@ public class CustomNpcRenderer extends LivingEntityRenderer<CustomNpcEntity, Bip
     public void updateRenderState(CustomNpcEntity entity, BipedEntityRenderState state, float tickDelta) {
         super.updateRenderState(entity, state, tickDelta);
 
-        // Apply custom pose to the render state model parts
         NpcPoseData pose = entity.getNpcPoseData();
         BipedEntityModel<BipedEntityRenderState> model = this.model;
 
@@ -63,10 +55,10 @@ public class CustomNpcRenderer extends LivingEntityRenderer<CustomNpcEntity, Bip
         model.leftLeg.yaw   = (float) Math.toRadians(pose.leftLegYaw);
         model.leftLeg.roll  = (float) Math.toRadians(pose.leftLegRoll);
 
-        // Hat follows head (copyTransform removed — copy angles + origin manually)
-        model.hat.yaw   = model.head.yaw;
-        model.hat.pitch = model.head.pitch;
-        model.hat.roll  = model.head.roll;
+        // Hat follows head rotation
+        model.hat.yaw    = model.head.yaw;
+        model.hat.pitch  = model.head.pitch;
+        model.hat.roll   = model.head.roll;
         model.hat.originX = model.head.originX;
         model.hat.originY = model.head.originY;
         model.hat.originZ = model.head.originZ;
@@ -74,8 +66,6 @@ public class CustomNpcRenderer extends LivingEntityRenderer<CustomNpcEntity, Bip
 
     @Override
     public Identifier getTexture(BipedEntityRenderState state) {
-        // We can't access entity here directly in new API — use default skin
-        // Skin URL textures need to be resolved via entity lookup or stored in render state
         return DEFAULT_SKIN;
     }
 }

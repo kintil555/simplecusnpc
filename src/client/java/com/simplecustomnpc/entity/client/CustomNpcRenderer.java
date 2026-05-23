@@ -19,7 +19,7 @@ public class CustomNpcRenderer extends LivingEntityRenderer<CustomNpcEntity, Bip
 
     public CustomNpcRenderer(EntityRendererFactory.Context ctx) {
         super(ctx,
-                new BipedEntityModel<>(ctx.getPart(EntityModelLayers.PLAYER_INNER_ARMOR)),
+                new BipedEntityModel<>(ctx.getPart(EntityModelLayers.PLAYER)),
                 0.5f);
     }
 
@@ -55,7 +55,6 @@ public class CustomNpcRenderer extends LivingEntityRenderer<CustomNpcEntity, Bip
         model.leftLeg.yaw   = (float) Math.toRadians(pose.leftLegYaw);
         model.leftLeg.roll  = (float) Math.toRadians(pose.leftLegRoll);
 
-        // Hat follows head rotation
         model.hat.yaw    = model.head.yaw;
         model.hat.pitch  = model.head.pitch;
         model.hat.roll   = model.head.roll;

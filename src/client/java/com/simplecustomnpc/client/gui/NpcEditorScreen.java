@@ -166,7 +166,11 @@ public class NpcEditorScreen extends Screen {
     public void render(DrawContext context, int mouseX, int mouseY, float delta) {
         // Semi-transparent background panel
         context.fill(panelX, panelY, panelX + panelW, panelY + panelH, 0xCC000000);
-        context.drawBorder(panelX, panelY, panelW, panelH, 0xFFAAAAAA);
+        // drawBorder removed in 1.21.11 — draw 4 edges manually
+        context.fill(panelX,            panelY,             panelX + panelW,     panelY + 1,          0xFFAAAAAA); // top
+        context.fill(panelX,            panelY + panelH - 1, panelX + panelW,    panelY + panelH,     0xFFAAAAAA); // bottom
+        context.fill(panelX,            panelY,             panelX + 1,          panelY + panelH,     0xFFAAAAAA); // left
+        context.fill(panelX + panelW - 1, panelY,           panelX + panelW,     panelY + panelH,     0xFFAAAAAA); // right
 
         // Title
         context.drawCenteredTextWithShadow(this.textRenderer,

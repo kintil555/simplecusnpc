@@ -2,9 +2,8 @@ package com.simplecustomnpc;
 
 import com.simplecustomnpc.entity.CustomNpcEntity;
 import com.simplecustomnpc.entity.client.CustomNpcRenderer;
-import com.simplecustomnpc.network.NpcNetworking;
+import com.simplecustomnpc.network.NpcClientNetworking;
 import net.fabricmc.api.ClientModInitializer;
-import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking;
 import net.fabricmc.fabric.api.client.rendering.v1.EntityRendererRegistry;
 
 public class SimpleCustomNpcClient implements ClientModInitializer {
@@ -18,6 +17,6 @@ public class SimpleCustomNpcClient implements ClientModInitializer {
         );
 
         // Register client-side networking
-        NpcNetworking.registerClientPackets();
+        NpcClientNetworking.register();
     }
 }

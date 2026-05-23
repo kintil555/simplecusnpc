@@ -6,6 +6,7 @@ import com.simplecustomnpc.entity.CustomNpcEntity;
 import com.simplecustomnpc.item.NpcSpawnItem;
 import com.simplecustomnpc.network.NpcNetworking;
 import net.fabricmc.api.ModInitializer;
+import net.fabricmc.fabric.api.object.builder.v1.block.entity.FabricBlockEntityTypeBuilder;
 import net.minecraft.block.AbstractBlock;
 import net.minecraft.block.entity.BlockEntityType;
 import net.minecraft.entity.EntityType;
@@ -52,11 +53,13 @@ public class SimpleCustomNpc implements ModInitializer {
             );
 
     // ── Block Entity ──────────────────────────────────────────────────────────
-    // 1.21.11: BlockEntityType.Builder is gone — use BlockEntityType.create()
+    // 1.21.11: BlockEntityType.create() is private; use FabricBlockEntityTypeBuilder
     public static final BlockEntityType<NpcSpawnBlockEntity> NPC_SPAWN_BLOCK_ENTITY;
     static {
         RegistryKey<BlockEntityType<?>> key = RegistryKey.of(RegistryKeys.BLOCK_ENTITY_TYPE, Identifier.of(MOD_ID, "npc_spawn_block_entity"));
-        BlockEntityType<NpcSpawnBlockEntity> type = BlockEntityType.create(NpcSpawnBlockEntity::new, NPC_SPAWN_BLOCK);
+        BlockEntityType<NpcSpawnBlockEntity> type = FabricBlockEntityTypeBuilder
+                .create(NpcSpawnBlockEntity::new, NPC_SPAWN_BLOCK)
+                .build();
         NPC_SPAWN_BLOCK_ENTITY = Registry.register(Registries.BLOCK_ENTITY_TYPE, key, type);
     }
 

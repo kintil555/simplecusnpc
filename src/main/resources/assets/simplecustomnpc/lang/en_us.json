@@ -1,0 +1,26 @@
+{
+  "item.simplecustomnpc.npc_spawn_block": "NPC Spawner",
+  "item.simplecustomnpc.npc_spawn_block.tooltip": "Place to spawn a poseable NPC. Right-click NPC to edit.",
+
+  "block.simplecustomnpc.npc_spawn_block": "NPC Spawn Block",
+
+  "entity.simplecustomnpc.custom_npc": "Custom NPC",
+
+  "gui.simplecustomnpc.editor.title": "NPC Editor",
+  "gui.simplecustomnpc.tab.pose": "Pose",
+  "gui.simplecustomnpc.tab.skin": "Skin",
+  "gui.simplecustomnpc.save": "Save",
+  "gui.simplecustomnpc.close": "Close",
+
+  "gui.simplecustomnpc.pose.hint": "Drag sliders to adjust body parts",
+
+  "gui.simplecustomnpc.skin.hint": "Enter a Minecraft username to fetch skin",
+  "gui.simplecustomnpc.skin.username": "Minecraft Username:",
+  "gui.simplecustomnpc.skin.username.hint": "e.g. Notch",
+
+  "gui.simplecustomnpc.slim.on": "Model: Alex (Slim)",
+  "gui.simplecustomnpc.slim.off": "Model: Steve (Wide)",
+
+  "gui.simplecustomnpc.displayname": "Display Name:",
+  "gui.simplecustomnpc.displayname.hint": "Leave empty to hide"
+}

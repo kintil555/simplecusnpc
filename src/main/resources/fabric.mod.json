@@ -1,0 +1,31 @@
+{
+  "schemaVersion": 1,
+  "id": "simplecustomnpc",
+  "version": "${version}",
+  "name": "Simple Custom NPC",
+  "description": "NPC mod for Minecraft content creators - set poses, change skins, place like a block!",
+  "authors": ["YourName"],
+  "contact": {
+    "sources": "https://github.com/yourusername/simplecustomnpc"
+  },
+  "license": "MIT",
+  "icon": "assets/simplecustomnpc/icon.png",
+  "environment": "*",
+  "entrypoints": {
+    "main": ["com.simplecustomnpc.SimpleCustomNpc"],
+    "client": ["com.simplecustomnpc.SimpleCustomNpcClient"]
+  },
+  "mixins": [
+    "simplecustomnpc.mixins.json",
+    {
+      "config": "simplecustomnpc.client.mixins.json",
+      "environment": "client"
+    }
+  ],
+  "depends": {
+    "fabricloader": ">=0.18.1",
+    "fabric-api": "*",
+    "minecraft": "1.21.11",
+    "java": ">=21"
+  }
+}

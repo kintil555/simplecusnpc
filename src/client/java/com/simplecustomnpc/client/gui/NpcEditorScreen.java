@@ -7,6 +7,7 @@ import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
 import net.minecraft.client.gui.DrawContext;
 import net.minecraft.client.gui.screen.Screen;
+import net.minecraft.client.gui.screen.ingame.InventoryScreen;
 import net.minecraft.client.gui.widget.ButtonWidget;
 import net.minecraft.client.gui.widget.TextFieldWidget;
 import net.minecraft.text.Text;
@@ -21,42 +22,50 @@ public class NpcEditorScreen extends Screen {
     private NpcPoseData pose;
 
     // Tabs
-    private static final int TAB_POSE  = 0;
-    private static final int TAB_SKIN  = 1;
+    private static final int TAB_POSE = 0;
+    private static final int TAB_SKIN = 1;
     private int activeTab = TAB_POSE;
 
     // Skin input
     private TextFieldWidget skinUsernameField;
     private TextFieldWidget displayNameField;
 
-    // Sliders state (list of SliderEntry)
+    // Sliders
     private final List<PoseSlider> sliders = new ArrayList<>();
 
+    // Panel layout
     private int panelX, panelY, panelW, panelH;
+
+    // Preview area (left side)
+    private static final int PREVIEW_W = 80;
 
     public NpcEditorScreen(CustomNpcEntity npc, NpcPoseData pose) {
         super(Text.translatable("gui.simplecustomnpc.editor.title"));
-        this.npc  = npc;
+        this.npc = npc;
         this.pose = pose;
     }
 
     @Override
     protected void init() {
-        panelW = 260;
+        panelW = 340;
         panelH = 300;
         panelX = (this.width  - panelW) / 2;
         panelY = (this.height - panelH) / 2;
 
         // ── Tab Buttons ──────────────────────────────────────────────────────
+        // Controls start after the preview column
+        int controlsX = panelX + PREVIEW_W + 10;
+        int controlsW = panelW - PREVIEW_W - 20;
+
         addDrawableChild(ButtonWidget.builder(
                 Text.translatable("gui.simplecustomnpc.tab.pose"),
                 btn -> switchTab(TAB_POSE)
-        ).dimensions(panelX, panelY, 130, 20).build());
+        ).dimensions(controlsX, panelY, controlsW / 2, 20).build());
 
         addDrawableChild(ButtonWidget.builder(
                 Text.translatable("gui.simplecustomnpc.tab.skin"),
                 btn -> switchTab(TAB_SKIN)
-        ).dimensions(panelX + 130, panelY, 130, 20).build());
+        ).dimensions(controlsX + controlsW / 2, panelY, controlsW / 2, 20).build());
 
         // ── Save Button ──────────────────────────────────────────────────────
         addDrawableChild(ButtonWidget.builder(
@@ -72,7 +81,7 @@ public class NpcEditorScreen extends Screen {
 
         // ── Display Name Field ────────────────────────────────────────────────
         displayNameField = new TextFieldWidget(this.textRenderer,
-                panelX + 10, panelY + panelH - 50, panelW - 20, 16,
+                controlsX, panelY + panelH - 50, controlsW, 16,
                 Text.translatable("gui.simplecustomnpc.displayname"));
         displayNameField.setPlaceholder(Text.translatable("gui.simplecustomnpc.displayname.hint"));
         displayNameField.setText(npc.getNpcDisplayName());
@@ -85,30 +94,21 @@ public class NpcEditorScreen extends Screen {
 
     private void buildPoseSliders() {
         sliders.clear();
+        int controlsX = panelX + PREVIEW_W + 10;
+        int controlsW = panelW - PREVIEW_W - 20;
         int y = panelY + 30;
-        int x = panelX + 10;
-        int w = panelW - 20;
 
-        // Head
-        sliders.add(new PoseSlider(x, y,      w, "Head Yaw",       -180, 180, pose.headYaw,    v -> pose.headYaw    = v));
-        sliders.add(new PoseSlider(x, y + 22, w, "Head Pitch",     -90,  90,  pose.headPitch,  v -> pose.headPitch  = v));
-
-        // Body
-        sliders.add(new PoseSlider(x, y + 50, w, "Body Yaw",       -180, 180, pose.bodyYaw,    v -> pose.bodyYaw    = v));
-
-        // Right Arm
-        sliders.add(new PoseSlider(x, y + 78,  w, "R.Arm Pitch",   -180, 180, pose.rightArmPitch, v -> pose.rightArmPitch = v));
-        sliders.add(new PoseSlider(x, y + 100, w, "R.Arm Yaw",     -180, 180, pose.rightArmYaw,   v -> pose.rightArmYaw   = v));
-        sliders.add(new PoseSlider(x, y + 122, w, "R.Arm Roll",    -180, 180, pose.rightArmRoll,  v -> pose.rightArmRoll  = v));
-
-        // Left Arm
-        sliders.add(new PoseSlider(x, y + 148, w, "L.Arm Pitch",   -180, 180, pose.leftArmPitch,  v -> pose.leftArmPitch  = v));
-        sliders.add(new PoseSlider(x, y + 170, w, "L.Arm Yaw",     -180, 180, pose.leftArmYaw,    v -> pose.leftArmYaw    = v));
-        sliders.add(new PoseSlider(x, y + 192, w, "L.Arm Roll",    -180, 180, pose.leftArmRoll,   v -> pose.leftArmRoll   = v));
-
-        // Right Leg
-        sliders.add(new PoseSlider(x, y + 218, w, "R.Leg Pitch",   -90,  90,  pose.rightLegPitch, v -> pose.rightLegPitch = v));
-        sliders.add(new PoseSlider(x, y + 240, w, "L.Leg Pitch",   -90,  90,  pose.leftLegPitch,  v -> pose.leftLegPitch  = v));
+        sliders.add(new PoseSlider(controlsX, y,       controlsW, "Head Yaw",    -180, 180, pose.headYaw,        v -> pose.headYaw        = v));
+        sliders.add(new PoseSlider(controlsX, y + 22,  controlsW, "Head Pitch",  -90,  90,  pose.headPitch,      v -> pose.headPitch      = v));
+        sliders.add(new PoseSlider(controlsX, y + 50,  controlsW, "Body Yaw",    -180, 180, pose.bodyYaw,        v -> pose.bodyYaw        = v));
+        sliders.add(new PoseSlider(controlsX, y + 78,  controlsW, "R.Arm Pitch", -180, 180, pose.rightArmPitch,  v -> pose.rightArmPitch  = v));
+        sliders.add(new PoseSlider(controlsX, y + 100, controlsW, "R.Arm Yaw",   -180, 180, pose.rightArmYaw,    v -> pose.rightArmYaw    = v));
+        sliders.add(new PoseSlider(controlsX, y + 122, controlsW, "R.Arm Roll",  -180, 180, pose.rightArmRoll,   v -> pose.rightArmRoll   = v));
+        sliders.add(new PoseSlider(controlsX, y + 148, controlsW, "L.Arm Pitch", -180, 180, pose.leftArmPitch,   v -> pose.leftArmPitch   = v));
+        sliders.add(new PoseSlider(controlsX, y + 170, controlsW, "L.Arm Yaw",   -180, 180, pose.leftArmYaw,     v -> pose.leftArmYaw     = v));
+        sliders.add(new PoseSlider(controlsX, y + 192, controlsW, "L.Arm Roll",  -180, 180, pose.leftArmRoll,    v -> pose.leftArmRoll    = v));
+        sliders.add(new PoseSlider(controlsX, y + 218, controlsW, "R.Leg Pitch", -90,  90,  pose.rightLegPitch,  v -> pose.rightLegPitch  = v));
+        sliders.add(new PoseSlider(controlsX, y + 240, controlsW, "L.Leg Pitch", -90,  90,  pose.leftLegPitch,   v -> pose.leftLegPitch   = v));
 
         for (PoseSlider s : sliders) {
             addDrawableChild(s.slider);
@@ -116,8 +116,11 @@ public class NpcEditorScreen extends Screen {
     }
 
     private void buildSkinTab() {
+        int controlsX = panelX + PREVIEW_W + 10;
+        int controlsW = panelW - PREVIEW_W - 20;
+
         skinUsernameField = new TextFieldWidget(this.textRenderer,
-                panelX + 10, panelY + 60, panelW - 20, 18,
+                controlsX, panelY + 60, controlsW, 18,
                 Text.translatable("gui.simplecustomnpc.skin.username"));
         skinUsernameField.setPlaceholder(Text.translatable("gui.simplecustomnpc.skin.username.hint"));
         skinUsernameField.setText(pose.skinUsername);
@@ -134,73 +137,84 @@ public class NpcEditorScreen extends Screen {
                             ? "gui.simplecustomnpc.slim.on"
                             : "gui.simplecustomnpc.slim.off"));
                 }
-        ).dimensions(panelX + 10, panelY + 90, panelW - 20, 18).build());
+        ).dimensions(controlsX, panelY + 90, controlsW, 18).build());
     }
 
     private void switchTab(int tab) {
         this.activeTab = tab;
-
-        // Show/hide pose sliders
         boolean isPose = (tab == TAB_POSE);
-        for (PoseSlider s : sliders) {
-            s.slider.visible = isPose;
-        }
-
-        // Show/hide skin fields
+        for (PoseSlider s : sliders) s.slider.visible = isPose;
         skinUsernameField.setVisible(!isPose);
     }
 
     private void save() {
-        // Collect skin username
         pose.skinUsername = skinUsernameField.getText().trim();
-
-        // Send to server
         NpcClientNetworking.sendSaveNpc(npc.getId(), pose);
-
-        // Apply display name
-        // (server will set the custom name when it processes the packet)
         this.close();
     }
 
     @Override
     public void render(DrawContext context, int mouseX, int mouseY, float delta) {
-        // Semi-transparent background panel
+        // Background panel
         context.fill(panelX, panelY, panelX + panelW, panelY + panelH, 0xCC000000);
-        // drawBorder removed in 1.21.11 — draw 4 edges manually
-        context.fill(panelX,            panelY,             panelX + panelW,     panelY + 1,          0xFFAAAAAA); // top
-        context.fill(panelX,            panelY + panelH - 1, panelX + panelW,    panelY + panelH,     0xFFAAAAAA); // bottom
-        context.fill(panelX,            panelY,             panelX + 1,          panelY + panelH,     0xFFAAAAAA); // left
-        context.fill(panelX + panelW - 1, panelY,           panelX + panelW,     panelY + panelH,     0xFFAAAAAA); // right
+        // Border
+        context.fill(panelX,               panelY,              panelX + panelW,      panelY + 1,           0xFFAAAAAA);
+        context.fill(panelX,               panelY + panelH - 1, panelX + panelW,      panelY + panelH,      0xFFAAAAAA);
+        context.fill(panelX,               panelY,              panelX + 1,           panelY + panelH,      0xFFAAAAAA);
+        context.fill(panelX + panelW - 1,  panelY,              panelX + panelW,      panelY + panelH,      0xFFAAAAAA);
+
+        // ── 3D Player Preview (left column) ──────────────────────────────────
+        // Divider between preview and controls
+        context.fill(panelX + PREVIEW_W, panelY + 1, panelX + PREVIEW_W + 1, panelY + panelH - 1, 0xFF555555);
+
+        // drawEntity(context, x1, y1, x2, y2, size, scale, mouseX, mouseY, entity)
+        // x1/y1 = top-left of bounding box, x2/y2 = bottom-right
+        // size controls the rendered height; scale is additional multiplier
+        // mouseX/mouseY relative to the bounding box center affect head/body rotation
+        int previewCenterX = panelX + PREVIEW_W / 2;
+        int previewBottom  = panelY + panelH - 30;
+        InventoryScreen.drawEntity(
+                context,
+                panelX + 5,        // x1
+                panelY + 10,       // y1
+                panelX + PREVIEW_W - 5,  // x2
+                previewBottom,     // y2
+                40,                // size (pixel height of model)
+                0.0625f,           // scale
+                (float) previewCenterX,  // mouseX — center = no rotation
+                (float) (panelY + panelH / 2), // mouseY
+                npc
+        );
 
         // Title
         context.drawCenteredTextWithShadow(this.textRenderer,
                 this.title, this.width / 2, panelY - 12, 0xFFFFFF);
 
-        // Tab labels
+        // Tab hints
         if (activeTab == TAB_POSE) {
             context.drawTextWithShadow(this.textRenderer,
                     Text.translatable("gui.simplecustomnpc.pose.hint"),
-                    panelX + 10, panelY + 22, 0xAAAAAA);
+                    panelX + PREVIEW_W + 10, panelY + 22, 0xAAAAAA);
         } else {
             context.drawTextWithShadow(this.textRenderer,
                     Text.translatable("gui.simplecustomnpc.skin.hint"),
-                    panelX + 10, panelY + 40, 0xAAAAAA);
+                    panelX + PREVIEW_W + 10, panelY + 40, 0xAAAAAA);
             context.drawTextWithShadow(this.textRenderer,
                     Text.translatable("gui.simplecustomnpc.skin.username"),
-                    panelX + 10, panelY + 50, 0xFFFFFF);
+                    panelX + PREVIEW_W + 10, panelY + 50, 0xFFFFFF);
         }
 
         // Display name label
         context.drawTextWithShadow(this.textRenderer,
                 Text.translatable("gui.simplecustomnpc.displayname"),
-                panelX + 10, panelY + panelH - 62, 0xFFFFFF);
+                panelX + PREVIEW_W + 10, panelY + panelH - 62, 0xFFFFFF);
 
         super.render(context, mouseX, mouseY, delta);
     }
 
     @Override
     public boolean shouldPause() {
-        return false; // Don't pause game in singleplayer
+        return false;
     }
 
     // ── Inner: pose slider wrapper ─────────────────────────────────────────────
@@ -215,13 +229,13 @@ public class NpcEditorScreen extends Screen {
                     Text.literal(label + ": " + (int) initial), normalized) {
                 @Override
                 protected void updateMessage() {
-                    float val = (float)(min + value * (max - min));
+                    float val = (float) (min + value * (max - min));
                     setMessage(Text.literal(label + ": " + (int) val));
                     onChange.accept(val);
                 }
                 @Override
                 protected void applyValue() {
-                    float val = (float)(min + value * (max - min));
+                    float val = (float) (min + value * (max - min));
                     onChange.accept(val);
                 }
             };

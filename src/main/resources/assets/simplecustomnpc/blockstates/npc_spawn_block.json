@@ -1,0 +1,6 @@
+{
+  "variants": {
+    "spawned=false": { "model": "simplecustomnpc:block/npc_spawn_block" },
+    "spawned=true":  { "model": "simplecustomnpc:block/npc_spawn_block" }
+  }
+}

@@ -63,13 +63,13 @@ public class CustomNpcRenderer extends LivingEntityRenderer<CustomNpcEntity, Bip
         model.leftLeg.yaw   = (float) Math.toRadians(pose.leftLegYaw);
         model.leftLeg.roll  = (float) Math.toRadians(pose.leftLegRoll);
 
-        // Hat follows head (copyTransform removed — copy transforms manually)
+        // Hat follows head (copyTransform removed — copy angles + origin manually)
         model.hat.yaw   = model.head.yaw;
         model.hat.pitch = model.head.pitch;
         model.hat.roll  = model.head.roll;
-        model.hat.pivotX = model.head.pivotX;
-        model.hat.pivotY = model.head.pivotY;
-        model.hat.pivotZ = model.head.pivotZ;
+        model.hat.originX = model.head.originX;
+        model.hat.originY = model.head.originY;
+        model.hat.originZ = model.head.originZ;
     }
 
     @Override

@@ -14,15 +14,13 @@ import net.minecraft.util.Identifier;
 @Environment(EnvType.CLIENT)
 public class CustomNpcRenderer extends LivingEntityRenderer<CustomNpcEntity, BipedEntityRenderState, BipedEntityModel<BipedEntityRenderState>> {
 
-    // Default Steve skin — used when no custom skin is set
     private static final Identifier DEFAULT_SKIN =
             Identifier.of("minecraft", "textures/entity/player/wide/steve.png");
 
     public CustomNpcRenderer(EntityRendererFactory.Context ctx) {
-        // PLAYER_INNER_ARMOR uses the standard biped model that matches the player shape,
-        // compatible with BipedEntityModel<BipedEntityRenderState>.
+        // PLAYER (wide/steve) — replaces removed PLAYER_INNER_ARMOR in 1.21.11
         super(ctx,
-                new BipedEntityModel<>(ctx.getPart(EntityModelLayers.PLAYER_INNER_ARMOR)),
+                new BipedEntityModel<>(ctx.getPart(EntityModelLayers.PLAYER)),
                 0.5f);
     }
 

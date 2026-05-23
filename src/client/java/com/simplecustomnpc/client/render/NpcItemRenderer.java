@@ -6,13 +6,16 @@ import com.simplecustomnpc.entity.CustomNpcEntity;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
 import net.minecraft.client.MinecraftClient;
-import net.minecraft.client.render.VertexConsumerProvider;
+import net.minecraft.client.render.command.OrderedRenderCommandQueue;
 import net.minecraft.client.render.item.model.special.SpecialModelRenderer;
 import net.minecraft.client.util.math.MatrixStack;
+import net.minecraft.item.ItemDisplayContext;
 import net.minecraft.item.ItemStack;
-import net.minecraft.item.ModelTransformationMode;
 import net.minecraft.world.World;
 import org.jetbrains.annotations.Nullable;
+import org.joml.Vector3fc;
+
+import java.util.function.Consumer;
 
 @Environment(EnvType.CLIENT)
 public class NpcItemRenderer implements SpecialModelRenderer<CustomNpcEntity> {
@@ -29,36 +32,32 @@ public class NpcItemRenderer implements SpecialModelRenderer<CustomNpcEntity> {
     @Override
     public void render(
             @Nullable CustomNpcEntity entity,
-            ModelTransformationMode modelTransformationMode,
+            ItemDisplayContext displayContext,
             MatrixStack matrices,
-            VertexConsumerProvider vertexConsumers,
+            OrderedRenderCommandQueue queue,
             int light,
             int overlay,
-            boolean glint
+            boolean glint,
+            int i
     ) {
         if (entity == null) return;
 
-        MinecraftClient client = MinecraftClient.getInstance();
-        var dispatcher = client.getEntityRenderDispatcher();
-
-        matrices.push();
-        // Center + scale to fit in item slot
-        matrices.translate(0.5, 0.5, 0.5);
-        matrices.scale(0.4f, 0.4f, 0.4f);
-        // Rotate so entity faces forward in GUI
-        matrices.multiply(net.minecraft.util.math.RotationAxis.POSITIVE_Y.rotationDegrees(180f));
-
-        dispatcher.render(entity, 0, 0, 0, 0.0f, 1.0f, matrices, vertexConsumers, light);
-
-        matrices.pop();
+        // Entity rendering via dispatcher is incompatible with OrderedRenderCommandQueue
+        // in 1.21.11 — skip custom rendering, entity preview only works in GUI screen.
+        // The item will fall back to the base builtin/entity appearance.
     }
 
-    // Unbaked factory for registration
+    @Override
+    public void collectVertices(Consumer<Vector3fc> consumer) {
+        // No static geometry to collect — entity is rendered dynamically
+    }
+
+    // Unbaked factory for SpecialModelTypes registration
     public record Unbaked() implements SpecialModelRenderer.Unbaked {
         public static final MapCodec<Unbaked> CODEC = MapCodec.unit(new Unbaked());
 
         @Override
-        public SpecialModelRenderer<?> bake(SpecialModelRenderer.BakingContext context) {
+        public SpecialModelRenderer<?> bake(SpecialModelRenderer.BakeContext context) {
             return INSTANCE;
         }
 

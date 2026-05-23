@@ -49,7 +49,7 @@ public class NpcNetworking {
             context.server().execute(() -> {
                 // 1.21.11: ServerPlayerEntity uses getServerWorld()
                 // Fallback: use getWorld() which is available on Entity base class
-                if (player.getWorld().getEntityById(payload.entityId()) instanceof CustomNpcEntity npc) {
+                if (player.getEntityWorld().getEntityById(payload.entityId()) instanceof CustomNpcEntity npc) {
                     if (player.squaredDistanceTo(npc) > 100) return;
                     NpcPoseData pose = NpcPoseData.fromNbt(payload.poseNbt());
                     npc.setNpcPoseData(pose);

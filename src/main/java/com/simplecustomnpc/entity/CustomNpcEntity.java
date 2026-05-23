@@ -10,6 +10,8 @@ import net.minecraft.entity.data.TrackedDataHandler;
 import net.minecraft.entity.data.TrackedDataHandlerRegistry;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.nbt.NbtCompound;
+import net.minecraft.network.RegistryByteBuf;
+import net.minecraft.network.codec.PacketCodec;
 import net.minecraft.network.codec.PacketCodecs;
 import net.minecraft.storage.ReadView;
 import net.minecraft.storage.WriteView;
@@ -21,9 +23,19 @@ import net.minecraft.world.World;
 
 public class CustomNpcEntity extends LivingEntity {
 
-    // NBT_COMPOUND not in registry in 1.21.11 — use NbtCompound via PacketCodecs
-    private static final TrackedDataHandler<NbtCompound> NBT_COMPOUND_HANDLER =
-            TrackedDataHandler.ofDefaulted(PacketCodecs.NBT_COMPOUND, NbtCompound::new);
+    // NBT_COMPOUND was removed from TrackedDataHandlerRegistry in 1.21.11.
+    // TrackedDataHandler.create() needs PacketCodec<? super RegistryByteBuf, T>.
+    // PacketCodecs.NBT_COMPOUND is PacketCodec<ByteBuf, NbtElement>; we cast+xmap it.
+    @SuppressWarnings("unchecked")
+    private static final TrackedDataHandler<NbtCompound> NBT_COMPOUND_HANDLER;
+    static {
+        // RegistryByteBuf extends ByteBuf, cast is safe; NbtCompound is always what
+        // NBT_COMPOUND encodes/decodes at runtime.
+        PacketCodec<RegistryByteBuf, NbtCompound> codec =
+                ((PacketCodec<RegistryByteBuf, NbtCompound>) (PacketCodec<?, ?>) PacketCodecs.NBT_COMPOUND);
+        NBT_COMPOUND_HANDLER = TrackedDataHandler.create(codec);
+        TrackedDataHandlerRegistry.register(NBT_COMPOUND_HANDLER);
+    }
 
     private static final TrackedData<NbtCompound> POSE_DATA =
             DataTracker.registerData(CustomNpcEntity.class, NBT_COMPOUND_HANDLER);
@@ -80,7 +92,7 @@ public class CustomNpcEntity extends LivingEntity {
 
     @Override
     public ActionResult interactAt(PlayerEntity player, net.minecraft.util.math.Vec3d hitPos, Hand hand) {
-        if (this.getWorld().isClient()) {
+        if (this.getEntityWorld().isClient()) {
             openEditGui(player);
         }
         return ActionResult.SUCCESS;
@@ -99,7 +111,6 @@ public class CustomNpcEntity extends LivingEntity {
         this.fallDistance = 0;
     }
 
-    @Override
     protected void mobTick() {
         // No AI
     }
@@ -131,7 +142,7 @@ public class CustomNpcEntity extends LivingEntity {
     @Override
     protected void readCustomData(ReadView view) {
         super.readCustomData(view);
-        view.get("NpcPoseData", NbtCompound.CODEC).ifPresent(nbt -> setNpcPoseData(NpcPoseData.fromNbt(nbt)));
+        view.read("NpcPoseData", NbtCompound.CODEC).ifPresent(nbt -> setNpcPoseData(NpcPoseData.fromNbt(nbt)));
         String name = view.getString("NpcDisplayName", "");
         if (!name.isEmpty()) setNpcDisplayName(name);
     }

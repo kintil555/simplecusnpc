@@ -2,7 +2,9 @@ package com.simplecustomnpc.item;
 
 import net.minecraft.block.Block;
 import net.minecraft.item.BlockItem;
+import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
+import net.minecraft.item.tooltip.TooltipType;
 import net.minecraft.text.Text;
 
 import java.util.List;
@@ -18,8 +20,9 @@ public class NpcSpawnItem extends BlockItem {
         return Text.translatable("item.simplecustomnpc.npc_spawn_block");
     }
 
+    // 1.21.2+: appendTooltip signature changed - context param removed
     @Override
-    public void appendTooltip(ItemStack stack, TooltipContext context, List<Text> tooltip, net.minecraft.item.tooltip.TooltipType type) {
+    public void appendTooltip(ItemStack stack, Item.TooltipContext context, List<Text> tooltip, TooltipType type) {
         tooltip.add(Text.translatable("item.simplecustomnpc.npc_spawn_block.tooltip"));
     }
 }

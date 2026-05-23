@@ -3,8 +3,6 @@ package com.simplecustomnpc.network;
 import com.simplecustomnpc.SimpleCustomNpc;
 import com.simplecustomnpc.entity.CustomNpcEntity;
 import com.simplecustomnpc.util.NpcPoseData;
-import net.fabricmc.api.EnvType;
-import net.fabricmc.api.Environment;
 import net.fabricmc.fabric.api.networking.v1.PayloadTypeRegistry;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
 import net.minecraft.entity.player.PlayerEntity;
@@ -49,7 +47,8 @@ public class NpcNetworking {
         ServerPlayNetworking.registerGlobalReceiver(SAVE_NPC_ID, (payload, context) -> {
             ServerPlayerEntity player = context.player();
             context.server().execute(() -> {
-                if (player.getWorld().getEntityById(payload.entityId()) instanceof CustomNpcEntity npc) {
+                // 1.21.2+: getWorld() → getServerWorld()
+                if (player.getServerWorld().getEntityById(payload.entityId()) instanceof CustomNpcEntity npc) {
                     if (player.squaredDistanceTo(npc) > 100) return;
                     NpcPoseData pose = NpcPoseData.fromNbt(payload.poseNbt());
                     npc.setNpcPoseData(pose);
@@ -61,10 +60,8 @@ public class NpcNetworking {
         });
     }
 
-    @Environment(EnvType.CLIENT)
-    public static void registerClientPackets() {
-        NpcClientNetworking.register();
-    }
+    // registerClientPackets() dipanggil dari client entrypoint, bukan dari sini
+    // Hapus referensi ke NpcClientNetworking yang belum ada
 
     public static void sendOpenGuiPacket(PlayerEntity player, CustomNpcEntity npc) {
         if (player instanceof ServerPlayerEntity serverPlayer) {

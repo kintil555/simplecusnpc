@@ -6,17 +6,17 @@ import com.simplecustomnpc.entity.CustomNpcEntity;
 import com.simplecustomnpc.item.NpcSpawnItem;
 import com.simplecustomnpc.network.NpcNetworking;
 import net.fabricmc.api.ModInitializer;
-import net.fabricmc.fabric.api.object.builder.v1.entity.FabricEntityTypeBuilder;
 import net.minecraft.block.AbstractBlock;
 import net.minecraft.block.Block;
 import net.minecraft.block.entity.BlockEntityType;
 import net.minecraft.entity.EntityDimensions;
 import net.minecraft.entity.EntityType;
 import net.minecraft.entity.SpawnGroup;
-import net.minecraft.item.BlockItem;
 import net.minecraft.item.Item;
 import net.minecraft.registry.Registries;
 import net.minecraft.registry.Registry;
+import net.minecraft.registry.RegistryKey;
+import net.minecraft.registry.RegistryKeys;
 import net.minecraft.util.Identifier;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -27,14 +27,15 @@ public class SimpleCustomNpc implements ModInitializer {
     public static final Logger LOGGER = LoggerFactory.getLogger(MOD_ID);
 
     // ── Entity ────────────────────────────────────────────────────────────────
-    public static final EntityType<CustomNpcEntity> CUSTOM_NPC_ENTITY_TYPE =
-            Registry.register(
-                    Registries.ENTITY_TYPE,
-                    Identifier.of(MOD_ID, "custom_npc"),
-                    FabricEntityTypeBuilder.<CustomNpcEntity>create(SpawnGroup.MISC, CustomNpcEntity::new)
-                            .dimensions(EntityDimensions.fixed(0.6f, 1.8f))
-                            .build()
-            );
+    // 1.21.2+: build() requires RegistryKey; FabricEntityTypeBuilder is deprecated → use vanilla EntityType.Builder
+    public static final EntityType<CustomNpcEntity> CUSTOM_NPC_ENTITY_TYPE;
+    static {
+        RegistryKey<EntityType<?>> key = RegistryKey.of(RegistryKeys.ENTITY_TYPE, Identifier.of(MOD_ID, "custom_npc"));
+        EntityType<CustomNpcEntity> type = EntityType.Builder.<CustomNpcEntity>create(CustomNpcEntity::new, SpawnGroup.MISC)
+                .dimensions(0.6f, 1.8f)
+                .build(key);
+        CUSTOM_NPC_ENTITY_TYPE = Registry.register(Registries.ENTITY_TYPE, key, type);
+    }
 
     // ── Block ─────────────────────────────────────────────────────────────────
     public static final NpcSpawnBlock NPC_SPAWN_BLOCK =
@@ -53,12 +54,13 @@ public class SimpleCustomNpc implements ModInitializer {
             );
 
     // ── Block Entity ──────────────────────────────────────────────────────────
-    public static final BlockEntityType<NpcSpawnBlockEntity> NPC_SPAWN_BLOCK_ENTITY =
-            Registry.register(
-                    Registries.BLOCK_ENTITY_TYPE,
-                    Identifier.of(MOD_ID, "npc_spawn_block_entity"),
-                    BlockEntityType.Builder.create(NpcSpawnBlockEntity::new, NPC_SPAWN_BLOCK).build()
-            );
+    // 1.21.2+: BlockEntityType.Builder is gone, use BlockEntityType.Builder.create(...).build(registryKey)
+    public static final BlockEntityType<NpcSpawnBlockEntity> NPC_SPAWN_BLOCK_ENTITY;
+    static {
+        RegistryKey<BlockEntityType<?>> key = RegistryKey.of(RegistryKeys.BLOCK_ENTITY_TYPE, Identifier.of(MOD_ID, "npc_spawn_block_entity"));
+        BlockEntityType<NpcSpawnBlockEntity> type = BlockEntityType.Builder.create(NpcSpawnBlockEntity::new, NPC_SPAWN_BLOCK).build();
+        NPC_SPAWN_BLOCK_ENTITY = Registry.register(Registries.BLOCK_ENTITY_TYPE, Identifier.of(MOD_ID, "npc_spawn_block_entity"), type);
+    }
 
     @Override
     public void onInitialize() {

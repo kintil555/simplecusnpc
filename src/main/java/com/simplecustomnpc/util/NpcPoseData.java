@@ -35,12 +35,12 @@ public class NpcPoseData {
     public float leftLegYaw   = 0f;
     public float leftLegRoll  = 0f;
 
-    // ── Slim arms (Alex model) ────────────────────────────────────────────────
+    // Slim arms (Alex model)
     public boolean slimModel = false;
 
-    // ── Skin ──────────────────────────────────────────────────────────────────
+    // Skin
     public String skinUsername = "";
-    public String skinUrl = "";      // resolved URL after fetch
+    public String skinUrl = "";
 
     public NbtCompound toNbt() {
         NbtCompound nbt = new NbtCompound();
@@ -70,31 +70,33 @@ public class NpcPoseData {
         return nbt;
     }
 
+    // In 1.21.5+, getFloat(key) returns Optional<Float>
+    // Use getFloat(key, fallback) overload that returns float directly
     public static NpcPoseData fromNbt(NbtCompound nbt) {
         NpcPoseData d = new NpcPoseData();
-        d.headYaw    = nbt.getFloat("headYaw");
-        d.headPitch  = nbt.getFloat("headPitch");
-        d.bodyYaw    = nbt.getFloat("bodyYaw");
+        d.headYaw    = nbt.getFloat("headYaw",   0f);
+        d.headPitch  = nbt.getFloat("headPitch", 0f);
+        d.bodyYaw    = nbt.getFloat("bodyYaw",   0f);
 
-        d.rightArmPitch = nbt.contains("rightArmPitch") ? nbt.getFloat("rightArmPitch") : -10f;
-        d.rightArmYaw   = nbt.getFloat("rightArmYaw");
-        d.rightArmRoll  = nbt.getFloat("rightArmRoll");
+        d.rightArmPitch = nbt.getFloat("rightArmPitch", -10f);
+        d.rightArmYaw   = nbt.getFloat("rightArmYaw",   0f);
+        d.rightArmRoll  = nbt.getFloat("rightArmRoll",  0f);
 
-        d.leftArmPitch = nbt.contains("leftArmPitch") ? nbt.getFloat("leftArmPitch") : -10f;
-        d.leftArmYaw   = nbt.getFloat("leftArmYaw");
-        d.leftArmRoll  = nbt.getFloat("leftArmRoll");
+        d.leftArmPitch = nbt.getFloat("leftArmPitch", -10f);
+        d.leftArmYaw   = nbt.getFloat("leftArmYaw",   0f);
+        d.leftArmRoll  = nbt.getFloat("leftArmRoll",  0f);
 
-        d.rightLegPitch = nbt.getFloat("rightLegPitch");
-        d.rightLegYaw   = nbt.getFloat("rightLegYaw");
-        d.rightLegRoll  = nbt.getFloat("rightLegRoll");
+        d.rightLegPitch = nbt.getFloat("rightLegPitch", 0f);
+        d.rightLegYaw   = nbt.getFloat("rightLegYaw",   0f);
+        d.rightLegRoll  = nbt.getFloat("rightLegRoll",  0f);
 
-        d.leftLegPitch = nbt.getFloat("leftLegPitch");
-        d.leftLegYaw   = nbt.getFloat("leftLegYaw");
-        d.leftLegRoll  = nbt.getFloat("leftLegRoll");
+        d.leftLegPitch = nbt.getFloat("leftLegPitch", 0f);
+        d.leftLegYaw   = nbt.getFloat("leftLegYaw",   0f);
+        d.leftLegRoll  = nbt.getFloat("leftLegRoll",  0f);
 
-        d.slimModel     = nbt.getBoolean("slimModel");
-        d.skinUsername  = nbt.getString("skinUsername");
-        d.skinUrl       = nbt.getString("skinUrl");
+        d.slimModel    = nbt.getBoolean("slimModel", false);
+        d.skinUsername = nbt.getString("skinUsername", "");
+        d.skinUrl      = nbt.getString("skinUrl",      "");
         return d;
     }
 }

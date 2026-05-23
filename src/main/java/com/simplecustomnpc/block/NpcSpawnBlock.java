@@ -1,5 +1,6 @@
 package com.simplecustomnpc.block;
 
+import com.mojang.serialization.MapCodec;
 import com.simplecustomnpc.SimpleCustomNpc;
 import com.simplecustomnpc.entity.CustomNpcEntity;
 import net.minecraft.block.*;
@@ -10,9 +11,9 @@ import net.minecraft.server.world.ServerWorld;
 import net.minecraft.state.StateManager;
 import net.minecraft.state.property.BooleanProperty;
 import net.minecraft.util.ActionResult;
-import net.minecraft.util.Hand;
 import net.minecraft.util.hit.BlockHitResult;
 import net.minecraft.util.math.BlockPos;
+import net.minecraft.util.math.Box;
 import net.minecraft.util.shape.VoxelShape;
 import net.minecraft.util.shape.VoxelShapes;
 import net.minecraft.world.BlockView;
@@ -23,9 +24,17 @@ public class NpcSpawnBlock extends BlockWithEntity {
 
     public static final BooleanProperty SPAWNED = BooleanProperty.of("spawned");
 
+    // 1.21.2+: BlockWithEntity requires getCodec()
+    private static final MapCodec<NpcSpawnBlock> CODEC = createCodec(NpcSpawnBlock::new);
+
     public NpcSpawnBlock(Settings settings) {
         super(settings);
         this.setDefaultState(this.stateManager.getDefaultState().with(SPAWNED, false));
+    }
+
+    @Override
+    public MapCodec<? extends BlockWithEntity> getCodec() {
+        return CODEC;
     }
 
     @Override
@@ -35,20 +44,18 @@ public class NpcSpawnBlock extends BlockWithEntity {
 
     @Override
     public BlockRenderType getRenderType(BlockState state) {
-        return BlockRenderType.INVISIBLE; // invisible block, only NPC is visible
+        return BlockRenderType.INVISIBLE;
     }
 
     @Override
     public VoxelShape getOutlineShape(BlockState state, BlockView world, BlockPos pos, ShapeContext context) {
-        return VoxelShapes.cuboid(0.25, 0, 0.25, 0.75, 0.5, 0.75); // small hitbox to select it
+        return VoxelShapes.cuboid(0.25, 0, 0.25, 0.75, 0.5, 0.75);
     }
 
     @Override
     public VoxelShape getCollisionShape(BlockState state, BlockView world, BlockPos pos, ShapeContext context) {
-        return VoxelShapes.empty(); // no collision
+        return VoxelShapes.empty();
     }
-
-    // ── On block placed: spawn NPC ────────────────────────────────────────────
 
     @Override
     public @Nullable BlockState getPlacementState(ItemPlacementContext ctx) {
@@ -68,7 +75,6 @@ public class NpcSpawnBlock extends BlockWithEntity {
         npc.refreshPositionAndAngles(pos.getX() + 0.5, pos.getY(), pos.getZ() + 0.5, 0f, 0f);
         world.spawnEntity(npc);
 
-        // Store NPC UUID in the block entity
         BlockEntity be = world.getBlockEntity(pos);
         if (be instanceof NpcSpawnBlockEntity npcBe) {
             npcBe.setNpcUuid(npc.getUuid());
@@ -76,33 +82,23 @@ public class NpcSpawnBlock extends BlockWithEntity {
         }
     }
 
-    // ── On block broken: remove NPC ───────────────────────────────────────────
-
+    // 1.21.11: onStateReplaced(BlockState, ServerWorld, BlockPos, boolean) - no newState param
     @Override
-    public void onStateReplaced(BlockState state, World world, BlockPos pos, BlockState newState, boolean moved) {
-        if (!world.isClient() && !newState.isOf(this)) {
-            BlockEntity be = world.getBlockEntity(pos);
-            if (be instanceof NpcSpawnBlockEntity npcBe) {
-                java.util.UUID uuid = npcBe.getNpcUuid();
-                if (uuid != null) {
-                    world.getEntitiesByType(
-                            net.minecraft.entity.EntityType.PLAYER,
-                            npc -> false,
-                            e -> {}
-                    );
-                    // Remove the linked NPC entity
-                    ((ServerWorld) world).getEntitiesByClass(
-                            CustomNpcEntity.class,
-                            new net.minecraft.util.math.Box(pos).expand(1),
-                            npc -> npc.getUuid().equals(uuid)
-                    ).forEach(net.minecraft.entity.Entity::discard);
-                }
+    public void onStateReplaced(BlockState state, ServerWorld world, BlockPos pos, boolean moved) {
+        // Remove the linked NPC when the block is broken
+        BlockEntity be = world.getBlockEntity(pos);
+        if (be instanceof NpcSpawnBlockEntity npcBe) {
+            java.util.UUID uuid = npcBe.getNpcUuid();
+            if (uuid != null) {
+                world.getEntitiesByClass(
+                        CustomNpcEntity.class,
+                        new Box(pos).expand(1),
+                        npc -> npc.getUuid().equals(uuid)
+                ).forEach(net.minecraft.entity.Entity::discard);
             }
         }
-        super.onStateReplaced(state, world, pos, newState, moved);
+        super.onStateReplaced(state, world, pos, moved);
     }
-
-    // ── Block entity ──────────────────────────────────────────────────────────
 
     @Override
     public @Nullable BlockEntity createBlockEntity(BlockPos pos, BlockState state) {
@@ -111,7 +107,6 @@ public class NpcSpawnBlock extends BlockWithEntity {
 
     @Override
     public ActionResult onUse(BlockState state, World world, BlockPos pos, PlayerEntity player, BlockHitResult hit) {
-        // Right-clicking the block also opens the GUI (fallback if NPC isn't hittable)
         if (!world.isClient()) {
             BlockEntity be = world.getBlockEntity(pos);
             if (be instanceof NpcSpawnBlockEntity npcBe) {
@@ -119,7 +114,7 @@ public class NpcSpawnBlock extends BlockWithEntity {
                 if (uuid != null) {
                     ((ServerWorld) world).getEntitiesByClass(
                             CustomNpcEntity.class,
-                            new net.minecraft.util.math.Box(pos).expand(2),
+                            new Box(pos).expand(2),
                             npc -> npc.getUuid().equals(uuid)
                     ).stream().findFirst().ifPresent(npc ->
                             com.simplecustomnpc.network.NpcNetworking.sendOpenGuiPacket(player, npc)

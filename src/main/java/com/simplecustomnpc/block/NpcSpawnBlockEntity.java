@@ -20,10 +20,12 @@ public class NpcSpawnBlockEntity extends BlockEntity {
     public UUID getNpcUuid() { return npcUuid; }
     public void setNpcUuid(UUID uuid) { this.npcUuid = uuid; }
 
+    // 1.21.2+: writeNbt/readNbt signature uses RegistryWrapper.WrapperLookup
     @Override
     protected void writeNbt(NbtCompound nbt, RegistryWrapper.WrapperLookup registryLookup) {
         super.writeNbt(nbt, registryLookup);
         if (npcUuid != null) {
+            // 1.21.5+: nbt.putUuid/getUuid/containsUuid still exist on NbtCompound
             nbt.putUuid("NpcUuid", npcUuid);
         }
     }

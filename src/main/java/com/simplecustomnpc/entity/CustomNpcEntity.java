@@ -11,12 +11,12 @@ import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.nbt.NbtCompound;
 import net.minecraft.text.Text;
 import net.minecraft.util.ActionResult;
+import net.minecraft.util.Arm;
 import net.minecraft.util.Hand;
 import net.minecraft.world.World;
 
 public class CustomNpcEntity extends LivingEntity {
 
-    // ── Tracked data keys (synced server → client) ────────────────────────────
     private static final TrackedData<NbtCompound> POSE_DATA =
             DataTracker.registerData(CustomNpcEntity.class, TrackedDataHandlerRegistry.NBT_COMPOUND);
 
@@ -26,7 +26,7 @@ public class CustomNpcEntity extends LivingEntity {
     public CustomNpcEntity(EntityType<? extends CustomNpcEntity> type, World world) {
         super(type, world);
         this.setInvulnerable(true);
-        this.noClip = true; // doesn't push other entities
+        this.noClip = true;
     }
 
     @Override
@@ -34,6 +34,12 @@ public class CustomNpcEntity extends LivingEntity {
         super.initDataTracker(builder);
         builder.add(POSE_DATA, new NbtCompound());
         builder.add(DISPLAY_NAME_KEY, "");
+    }
+
+    // Required abstract method from LivingEntity
+    @Override
+    public Arm getMainArm() {
+        return Arm.RIGHT;
     }
 
     // ── Pose getters / setters ────────────────────────────────────────────────
@@ -63,39 +69,32 @@ public class CustomNpcEntity extends LivingEntity {
         }
     }
 
-    // ── Interaction: right-click opens GUI ───────────────────────────────────
+    // ── Interaction ───────────────────────────────────────────────────────────
 
     @Override
     public ActionResult interactAt(PlayerEntity player, net.minecraft.util.math.Vec3d hitPos, Hand hand) {
         if (this.getWorld().isClient()) {
-            // Client-side: open GUI (handled in client entrypoint)
             openEditGui(player);
         }
         return ActionResult.SUCCESS;
     }
 
-    /**
-     * Called client-side. Opens the NPC editor screen.
-     * Actual screen opening is delegated to the client module to avoid
-     * classloading client-only classes on the server.
-     */
     private void openEditGui(PlayerEntity player) {
-        // No-op on server; client module overrides via event
+        // No-op server-side; client entrypoint handles via event
     }
 
-    // ── AI: no movement, always look forward ─────────────────────────────────
+    // ── Tick / AI ─────────────────────────────────────────────────────────────
 
     @Override
     public void tick() {
         super.tick();
-        // Freeze the NPC – no gravity, no movement
         this.setVelocity(0, 0, 0);
         this.fallDistance = 0;
     }
 
     @Override
     protected void mobTick() {
-        // Intentionally empty – NPC has no AI
+        // No AI
     }
 
     @Override
@@ -118,8 +117,7 @@ public class CustomNpcEntity extends LivingEntity {
     @Override
     public void writeCustomDataToNbt(NbtCompound nbt) {
         super.writeCustomDataToNbt(nbt);
-        NpcPoseData pose = getNpcPoseData();
-        nbt.put("NpcPoseData", pose.toNbt());
+        nbt.put("NpcPoseData", getNpcPoseData().toNbt());
         nbt.putString("NpcDisplayName", getNpcDisplayName());
     }
 
@@ -127,16 +125,16 @@ public class CustomNpcEntity extends LivingEntity {
     public void readCustomDataFromNbt(NbtCompound nbt) {
         super.readCustomDataFromNbt(nbt);
         if (nbt.contains("NpcPoseData")) {
-            NpcPoseData pose = NpcPoseData.fromNbt(nbt.getCompound("NpcPoseData"));
+            NpcPoseData pose = NpcPoseData.fromNbt(nbt.getCompoundOrEmpty("NpcPoseData"));
             setNpcPoseData(pose);
         }
         if (nbt.contains("NpcDisplayName")) {
-            setNpcDisplayName(nbt.getString("NpcDisplayName"));
+            setNpcDisplayName(nbt.getString("NpcDisplayName", ""));
         }
     }
 
     @Override
     public boolean shouldSave() {
-        return true; // persist NPC across restarts
+        return true;
     }
 }

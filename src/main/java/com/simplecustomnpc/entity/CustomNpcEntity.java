@@ -6,9 +6,13 @@ import net.minecraft.entity.EntityType;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.data.DataTracker;
 import net.minecraft.entity.data.TrackedData;
+import net.minecraft.entity.data.TrackedDataHandler;
 import net.minecraft.entity.data.TrackedDataHandlerRegistry;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.nbt.NbtCompound;
+import net.minecraft.network.codec.PacketCodecs;
+import net.minecraft.storage.ReadView;
+import net.minecraft.storage.WriteView;
 import net.minecraft.text.Text;
 import net.minecraft.util.ActionResult;
 import net.minecraft.util.Arm;
@@ -17,8 +21,12 @@ import net.minecraft.world.World;
 
 public class CustomNpcEntity extends LivingEntity {
 
+    // NBT_COMPOUND not in registry in 1.21.11 — use NbtCompound via PacketCodecs
+    private static final TrackedDataHandler<NbtCompound> NBT_COMPOUND_HANDLER =
+            TrackedDataHandler.ofDefaulted(PacketCodecs.NBT_COMPOUND, NbtCompound::new);
+
     private static final TrackedData<NbtCompound> POSE_DATA =
-            DataTracker.registerData(CustomNpcEntity.class, TrackedDataHandlerRegistry.NBT_COMPOUND);
+            DataTracker.registerData(CustomNpcEntity.class, NBT_COMPOUND_HANDLER);
 
     private static final TrackedData<String> DISPLAY_NAME_KEY =
             DataTracker.registerData(CustomNpcEntity.class, TrackedDataHandlerRegistry.STRING);
@@ -36,7 +44,6 @@ public class CustomNpcEntity extends LivingEntity {
         builder.add(DISPLAY_NAME_KEY, "");
     }
 
-    // Required abstract method from LivingEntity
     @Override
     public Arm getMainArm() {
         return Arm.RIGHT;
@@ -103,7 +110,7 @@ public class CustomNpcEntity extends LivingEntity {
     }
 
     @Override
-    public boolean isInvulnerableTo(net.minecraft.entity.damage.DamageSource source) {
+    public boolean isInvulnerableTo(net.minecraft.server.world.ServerWorld world, net.minecraft.entity.damage.DamageSource source) {
         return true;
     }
 
@@ -112,25 +119,21 @@ public class CustomNpcEntity extends LivingEntity {
         return false;
     }
 
-    // ── NBT persistence ───────────────────────────────────────────────────────
+    // ── NBT persistence — 1.21.11 uses WriteView/ReadView ─────────────────────
 
     @Override
-    public void writeCustomDataToNbt(NbtCompound nbt) {
-        super.writeCustomDataToNbt(nbt);
-        nbt.put("NpcPoseData", getNpcPoseData().toNbt());
-        nbt.putString("NpcDisplayName", getNpcDisplayName());
+    protected void writeCustomData(WriteView view) {
+        super.writeCustomData(view);
+        view.put("NpcPoseData", NbtCompound.CODEC, getNpcPoseData().toNbt());
+        view.putString("NpcDisplayName", getNpcDisplayName());
     }
 
     @Override
-    public void readCustomDataFromNbt(NbtCompound nbt) {
-        super.readCustomDataFromNbt(nbt);
-        if (nbt.contains("NpcPoseData")) {
-            NpcPoseData pose = NpcPoseData.fromNbt(nbt.getCompoundOrEmpty("NpcPoseData"));
-            setNpcPoseData(pose);
-        }
-        if (nbt.contains("NpcDisplayName")) {
-            setNpcDisplayName(nbt.getString("NpcDisplayName", ""));
-        }
+    protected void readCustomData(ReadView view) {
+        super.readCustomData(view);
+        view.get("NpcPoseData", NbtCompound.CODEC).ifPresent(nbt -> setNpcPoseData(NpcPoseData.fromNbt(nbt)));
+        String name = view.getString("NpcDisplayName", "");
+        if (!name.isEmpty()) setNpcDisplayName(name);
     }
 
     @Override

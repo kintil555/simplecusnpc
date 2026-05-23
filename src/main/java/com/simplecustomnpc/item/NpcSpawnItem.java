@@ -20,7 +20,7 @@ public class NpcSpawnItem extends BlockItem {
         return Text.translatable("item.simplecustomnpc.npc_spawn_block");
     }
 
-    // 1.21.2+: appendTooltip signature changed - context param removed
+    // 1.21.x: appendTooltip uses Item.TooltipContext
     @Override
     public void appendTooltip(ItemStack stack, Item.TooltipContext context, List<Text> tooltip, TooltipType type) {
         tooltip.add(Text.translatable("item.simplecustomnpc.npc_spawn_block.tooltip"));

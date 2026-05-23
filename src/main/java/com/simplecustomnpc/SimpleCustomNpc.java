@@ -7,9 +7,7 @@ import com.simplecustomnpc.item.NpcSpawnItem;
 import com.simplecustomnpc.network.NpcNetworking;
 import net.fabricmc.api.ModInitializer;
 import net.minecraft.block.AbstractBlock;
-import net.minecraft.block.Block;
 import net.minecraft.block.entity.BlockEntityType;
-import net.minecraft.entity.EntityDimensions;
 import net.minecraft.entity.EntityType;
 import net.minecraft.entity.SpawnGroup;
 import net.minecraft.item.Item;
@@ -27,7 +25,7 @@ public class SimpleCustomNpc implements ModInitializer {
     public static final Logger LOGGER = LoggerFactory.getLogger(MOD_ID);
 
     // ── Entity ────────────────────────────────────────────────────────────────
-    // 1.21.2+: build() requires RegistryKey; FabricEntityTypeBuilder is deprecated → use vanilla EntityType.Builder
+    // 1.21.2+: build() requires RegistryKey; FabricEntityTypeBuilder is deprecated
     public static final EntityType<CustomNpcEntity> CUSTOM_NPC_ENTITY_TYPE;
     static {
         RegistryKey<EntityType<?>> key = RegistryKey.of(RegistryKeys.ENTITY_TYPE, Identifier.of(MOD_ID, "custom_npc"));
@@ -54,12 +52,12 @@ public class SimpleCustomNpc implements ModInitializer {
             );
 
     // ── Block Entity ──────────────────────────────────────────────────────────
-    // 1.21.2+: BlockEntityType.Builder is gone, use BlockEntityType.Builder.create(...).build(registryKey)
+    // 1.21.11: BlockEntityType.Builder is gone — use BlockEntityType.create()
     public static final BlockEntityType<NpcSpawnBlockEntity> NPC_SPAWN_BLOCK_ENTITY;
     static {
         RegistryKey<BlockEntityType<?>> key = RegistryKey.of(RegistryKeys.BLOCK_ENTITY_TYPE, Identifier.of(MOD_ID, "npc_spawn_block_entity"));
-        BlockEntityType<NpcSpawnBlockEntity> type = BlockEntityType.Builder.create(NpcSpawnBlockEntity::new, NPC_SPAWN_BLOCK).build();
-        NPC_SPAWN_BLOCK_ENTITY = Registry.register(Registries.BLOCK_ENTITY_TYPE, Identifier.of(MOD_ID, "npc_spawn_block_entity"), type);
+        BlockEntityType<NpcSpawnBlockEntity> type = BlockEntityType.create(NpcSpawnBlockEntity::new, NPC_SPAWN_BLOCK);
+        NPC_SPAWN_BLOCK_ENTITY = Registry.register(Registries.BLOCK_ENTITY_TYPE, key, type);
     }
 
     @Override

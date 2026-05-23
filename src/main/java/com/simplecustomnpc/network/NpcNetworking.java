@@ -47,8 +47,9 @@ public class NpcNetworking {
         ServerPlayNetworking.registerGlobalReceiver(SAVE_NPC_ID, (payload, context) -> {
             ServerPlayerEntity player = context.player();
             context.server().execute(() -> {
-                // 1.21.2+: getWorld() → getServerWorld()
-                if (player.getServerWorld().getEntityById(payload.entityId()) instanceof CustomNpcEntity npc) {
+                // 1.21.11: ServerPlayerEntity uses getServerWorld()
+                // Fallback: use getWorld() which is available on Entity base class
+                if (player.getWorld().getEntityById(payload.entityId()) instanceof CustomNpcEntity npc) {
                     if (player.squaredDistanceTo(npc) > 100) return;
                     NpcPoseData pose = NpcPoseData.fromNbt(payload.poseNbt());
                     npc.setNpcPoseData(pose);
@@ -59,9 +60,6 @@ public class NpcNetworking {
             });
         });
     }
-
-    // registerClientPackets() dipanggil dari client entrypoint, bukan dari sini
-    // Hapus referensi ke NpcClientNetworking yang belum ada
 
     public static void sendOpenGuiPacket(PlayerEntity player, CustomNpcEntity npc) {
         if (player instanceof ServerPlayerEntity serverPlayer) {

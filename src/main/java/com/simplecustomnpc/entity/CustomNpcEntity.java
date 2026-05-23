@@ -1,18 +1,14 @@
 package com.simplecustomnpc.entity;
 
-import com.simplecustomnpc.SimpleCustomNpc;
 import com.simplecustomnpc.util.NpcPoseData;
 import net.minecraft.entity.EntityType;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.data.DataTracker;
 import net.minecraft.entity.data.TrackedData;
-import net.minecraft.entity.data.TrackedDataHandler;
 import net.minecraft.entity.data.TrackedDataHandlerRegistry;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.nbt.NbtCompound;
-import net.minecraft.network.RegistryByteBuf;
-import net.minecraft.network.codec.PacketCodec;
-import net.minecraft.network.codec.PacketCodecs;
+import net.minecraft.nbt.StringNbtReader;
 import net.minecraft.storage.ReadView;
 import net.minecraft.storage.WriteView;
 import net.minecraft.text.Text;
@@ -23,24 +19,14 @@ import net.minecraft.world.World;
 
 public class CustomNpcEntity extends LivingEntity {
 
-    // 1.21.11: TrackedDataHandlerRegistry no longer has NBT_COMPOUND.
-    // We create our own handler using PacketCodecs.NBT_COMPOUND (which is
-    // PacketCodec<ByteBuf, NbtElement>). We xmap it to NbtCompound safely.
-    private static final TrackedDataHandler<NbtCompound> NBT_COMPOUND_HANDLER;
-    static {
-        // PacketCodecs.NBT_COMPOUND encodes NbtElement but always produces NbtCompound
-        // at the call sites we use. Cast to the needed generic type via xmap.
-        PacketCodec<RegistryByteBuf, NbtCompound> codec = PacketCodecs.NBT_COMPOUND
-                .cast();
-        NBT_COMPOUND_HANDLER = TrackedDataHandler.create(codec);
-        TrackedDataHandlerRegistry.register(NBT_COMPOUND_HANDLER);
-    }
-
-    private static final TrackedData<NbtCompound> POSE_DATA =
-            DataTracker.registerData(CustomNpcEntity.class, NBT_COMPOUND_HANDLER);
+    // Synced as NBT string so it works with STRING handler (always available)
+    private static final TrackedData<String> POSE_NBT_STR =
+            DataTracker.registerData(CustomNpcEntity.class, TrackedDataHandlerRegistry.STRING);
 
     private static final TrackedData<String> DISPLAY_NAME_KEY =
             DataTracker.registerData(CustomNpcEntity.class, TrackedDataHandlerRegistry.STRING);
+
+    private NpcPoseData cachedPose = new NpcPoseData();
 
     public CustomNpcEntity(EntityType<? extends CustomNpcEntity> type, World world) {
         super(type, world);
@@ -51,25 +37,28 @@ public class CustomNpcEntity extends LivingEntity {
     @Override
     protected void initDataTracker(DataTracker.Builder builder) {
         super.initDataTracker(builder);
-        builder.add(POSE_DATA, new NbtCompound());
+        builder.add(POSE_NBT_STR, "");
         builder.add(DISPLAY_NAME_KEY, "");
     }
 
     @Override
-    public Arm getMainArm() {
-        return Arm.RIGHT;
-    }
+    public Arm getMainArm() { return Arm.RIGHT; }
 
-    // ── Pose getters / setters ────────────────────────────────────────────────
+    // ── Pose ──────────────────────────────────────────────────────────────────
 
     public NpcPoseData getNpcPoseData() {
-        NbtCompound nbt = this.dataTracker.get(POSE_DATA);
-        if (nbt.isEmpty()) return new NpcPoseData();
-        return NpcPoseData.fromNbt(nbt);
+        String raw = this.dataTracker.get(POSE_NBT_STR);
+        if (raw == null || raw.isEmpty()) return cachedPose;
+        try {
+            NbtCompound nbt = StringNbtReader.parse(raw);
+            cachedPose = NpcPoseData.fromNbt(nbt);
+        } catch (Exception ignored) {}
+        return cachedPose;
     }
 
     public void setNpcPoseData(NpcPoseData data) {
-        this.dataTracker.set(POSE_DATA, data.toNbt());
+        this.cachedPose = data;
+        this.dataTracker.set(POSE_NBT_STR, data.toNbt().toString());
     }
 
     public String getNpcDisplayName() {
@@ -87,21 +76,17 @@ public class CustomNpcEntity extends LivingEntity {
         }
     }
 
-    // ── Interaction ───────────────────────────────────────────────────────────
+    // ── Interaction: right-click entity → server sends open GUI packet ─────────
 
     @Override
     public ActionResult interactAt(PlayerEntity player, net.minecraft.util.math.Vec3d hitPos, Hand hand) {
-        if (this.getEntityWorld().isClient()) {
-            openEditGui(player);
+        if (!this.getWorld().isClient()) {
+            com.simplecustomnpc.network.NpcNetworking.sendOpenGuiPacket(player, this);
         }
         return ActionResult.SUCCESS;
     }
 
-    private void openEditGui(PlayerEntity player) {
-        // No-op server-side; client entrypoint handles via networking event
-    }
-
-    // ── Tick / AI ─────────────────────────────────────────────────────────────
+    // ── Tick ──────────────────────────────────────────────────────────────────
 
     @Override
     public void tick() {
@@ -110,14 +95,7 @@ public class CustomNpcEntity extends LivingEntity {
         this.fallDistance = 0;
     }
 
-    protected void mobTick() {
-        // No AI
-    }
-
-    @Override
-    public boolean canTakeDamage() {
-        return false;
-    }
+    @Override public boolean canTakeDamage() { return false; }
 
     @Override
     public boolean isInvulnerableTo(net.minecraft.server.world.ServerWorld world,
@@ -125,30 +103,27 @@ public class CustomNpcEntity extends LivingEntity {
         return true;
     }
 
-    @Override
-    public boolean isPushable() {
-        return false;
-    }
+    @Override public boolean isPushable() { return false; }
 
-    // ── NBT persistence — 1.21.11 uses WriteView/ReadView ─────────────────────
+    // ── NBT persistence ───────────────────────────────────────────────────────
 
     @Override
     protected void writeCustomData(WriteView view) {
         super.writeCustomData(view);
-        view.put("NpcPoseData", NbtCompound.CODEC, getNpcPoseData().toNbt());
+        view.put("NpcPoseData", NbtCompound.CODEC, cachedPose.toNbt());
         view.putString("NpcDisplayName", getNpcDisplayName());
     }
 
     @Override
     protected void readCustomData(ReadView view) {
         super.readCustomData(view);
-        view.read("NpcPoseData", NbtCompound.CODEC).ifPresent(nbt -> setNpcPoseData(NpcPoseData.fromNbt(nbt)));
+        view.read("NpcPoseData", NbtCompound.CODEC).ifPresent(nbt -> {
+            cachedPose = NpcPoseData.fromNbt(nbt);
+            this.dataTracker.set(POSE_NBT_STR, nbt.toString());
+        });
         String name = view.getString("NpcDisplayName", "");
         if (!name.isEmpty()) setNpcDisplayName(name);
     }
 
-    @Override
-    public boolean shouldSave() {
-        return true;
-    }
+    @Override public boolean shouldSave() { return true; }
 }

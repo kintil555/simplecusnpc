@@ -23,7 +23,6 @@ import org.jetbrains.annotations.Nullable;
 public class NpcSpawnBlock extends BlockWithEntity {
 
     public static final BooleanProperty SPAWNED = BooleanProperty.of("spawned");
-
     private static final MapCodec<NpcSpawnBlock> CODEC = createCodec(NpcSpawnBlock::new);
 
     public NpcSpawnBlock(Settings settings) {
@@ -31,28 +30,22 @@ public class NpcSpawnBlock extends BlockWithEntity {
         this.setDefaultState(this.stateManager.getDefaultState().with(SPAWNED, false));
     }
 
-    @Override
-    public MapCodec<? extends BlockWithEntity> getCodec() {
-        return CODEC;
-    }
+    @Override public MapCodec<? extends BlockWithEntity> getCodec() { return CODEC; }
 
     @Override
     protected void appendProperties(StateManager.Builder<Block, BlockState> builder) {
         builder.add(SPAWNED);
     }
 
-    @Override
-    public BlockRenderType getRenderType(BlockState state) {
-        return BlockRenderType.INVISIBLE;
-    }
+    @Override public BlockRenderType getRenderType(BlockState state) { return BlockRenderType.INVISIBLE; }
 
     @Override
-    public VoxelShape getOutlineShape(BlockState state, BlockView world, BlockPos pos, ShapeContext context) {
+    public VoxelShape getOutlineShape(BlockState state, BlockView world, BlockPos pos, ShapeContext ctx) {
         return VoxelShapes.cuboid(0.25, 0, 0.25, 0.75, 0.5, 0.75);
     }
 
     @Override
-    public VoxelShape getCollisionShape(BlockState state, BlockView world, BlockPos pos, ShapeContext context) {
+    public VoxelShape getCollisionShape(BlockState state, BlockView world, BlockPos pos, ShapeContext ctx) {
         return VoxelShapes.empty();
     }
 
@@ -83,20 +76,15 @@ public class NpcSpawnBlock extends BlockWithEntity {
         }
     }
 
-    // 1.21.11: AbstractBlock only exposes onStateReplaced(BlockState, ServerWorld, BlockPos, boolean)
-    // No World-based overload exists. NPC cleanup is server-only anyway, so this is correct.
     @Override
     public void onStateReplaced(BlockState state, ServerWorld world, BlockPos pos, boolean moved) {
-        if (!state.isOf(state.getBlock())) {
-            // Note: newState not available here, so we check via moved flag
-        }
         BlockEntity be = world.getBlockEntity(pos);
         if (be instanceof NpcSpawnBlockEntity npcBe) {
             java.util.UUID uuid = npcBe.getNpcUuid();
             if (uuid != null) {
                 world.getEntitiesByClass(
                         CustomNpcEntity.class,
-                        new Box(pos).expand(1),
+                        new Box(pos).expand(2),
                         npc -> npc.getUuid().equals(uuid)
                 ).forEach(net.minecraft.entity.Entity::discard);
             }
@@ -109,6 +97,7 @@ public class NpcSpawnBlock extends BlockWithEntity {
         return new NpcSpawnBlockEntity(pos, state);
     }
 
+    // Right-click the BLOCK → open editor for nearby NPC
     @Override
     public ActionResult onUse(BlockState state, World world, BlockPos pos,
                               PlayerEntity player, BlockHitResult hit) {
@@ -119,7 +108,7 @@ public class NpcSpawnBlock extends BlockWithEntity {
                 if (uuid != null) {
                     ((ServerWorld) world).getEntitiesByClass(
                             CustomNpcEntity.class,
-                            new Box(pos).expand(2),
+                            new Box(pos).expand(4),  // expanded radius
                             npc -> npc.getUuid().equals(uuid)
                     ).stream().findFirst().ifPresent(npc ->
                             com.simplecustomnpc.network.NpcNetworking.sendOpenGuiPacket(player, npc)

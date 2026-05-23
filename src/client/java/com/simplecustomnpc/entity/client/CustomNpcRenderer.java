@@ -18,9 +18,10 @@ public class CustomNpcRenderer extends LivingEntityRenderer<CustomNpcEntity, Bip
             Identifier.of("minecraft", "textures/entity/player/wide/steve.png");
 
     public CustomNpcRenderer(EntityRendererFactory.Context ctx) {
-        // PLAYER (wide/steve) — replaces removed PLAYER_INNER_ARMOR in 1.21.11
+        // ZOMBIE uses the standard BipedEntityModel (same proportions as steve/player)
+        // PLAYER layer is for PlayerEntityModel which is incompatible with BipedEntityModel
         super(ctx,
-                new BipedEntityModel<>(ctx.getPart(EntityModelLayers.PLAYER)),
+                new BipedEntityModel<>(ctx.getPart(EntityModelLayers.ZOMBIE)),
                 0.5f);
     }
 

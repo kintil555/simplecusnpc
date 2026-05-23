@@ -33,19 +33,11 @@ jobs:
       - name: Build with Gradle
         run: ./gradlew build
         env:
-          # Suppress Gradle daemon interactive prompts
           GRADLE_OPTS: "-Dorg.gradle.daemon=false"
 
-      - name: Upload build artifacts
+      - name: Upload mod jar
         uses: actions/upload-artifact@v4
         with:
-          name: simplecustomnpc-${{ github.sha }}
-          path: build/libs/*.jar
+          name: simplecustomnpc
+          path: build/libs/simplecustomnpc-*.jar
           if-no-files-found: error
-
-      - name: Upload sources jar
-        uses: actions/upload-artifact@v4
-        with:
-          name: simplecustomnpc-sources-${{ github.sha }}
-          path: build/libs/*-sources.jar
-          if-no-files-found: warn

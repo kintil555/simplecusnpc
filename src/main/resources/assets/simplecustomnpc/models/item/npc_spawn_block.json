@@ -1,6 +1,9 @@
 {
-  "parent": "minecraft:item/generated",
-  "textures": {
-    "layer0": "minecraft:textures/entity/player/wide/steve.png"
+  "model": {
+    "type": "minecraft:special",
+    "special": {
+      "type": "simplecustomnpc:npc_item_renderer"
+    },
+    "base": "minecraft:builtin/entity"
   }
 }
